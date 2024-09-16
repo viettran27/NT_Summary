@@ -1,0 +1,32 @@
+.header {
+    height: 60px;
+    background-color: #00419E;
+    color: white;
+    margin-bottom: 70px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    bottom: 70px;
+
+    .maxWidth {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        max-width: 1280px;
+        margin: 0 auto;    
+    
+        .logo {
+            max-height: 50px;
+        }
+
+        & h1 {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+        }
+    }
+
+}
