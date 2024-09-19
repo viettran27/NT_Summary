@@ -244,7 +244,7 @@ def export_excel_for_secretary(date: date, fac: str, db: Session = Depends(get_d
                     ws.cell(row=current_merge_start, column=7).value = f"=IF(ISBLANK(F{current_merge_start}),-E{current_merge_start},E{current_merge_start}-F{current_merge_start})"
                 else:
                     row = i - 1
-                    ws.cell(row=row, column=7).value = f"=IF(ISBLANK(F{row}),-E{row},F{row}-E{row})"
+                    ws.cell(row=row, column=7).value = f"=IF(ISBLANK(F{row}),-E{row},E{row}-F{row})"
                 current_merge_start = i
 
 
