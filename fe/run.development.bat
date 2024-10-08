@@ -1,0 +1,1 @@
+pnpm run dev --mode=development

@@ -3,7 +3,7 @@ import styles from "./Dropdown.module.scss"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useEffect } from "react";
 
-const Dropdown = ({value, options, setValue}) => {
+const Dropdown = ({value, className, options, setValue}) => {
   const valueElm = useRef(null)
   const containerElm = useRef(null)
 
@@ -31,12 +31,12 @@ const Dropdown = ({value, options, setValue}) => {
   const initValue = options?.find((option) => option.value === value)
 
   return (
-    <div className={styles.container} ref={containerElm}>
+    <div className={`${styles.container} ${className}`} ref={containerElm}>
       <div className={`${styles.dropdownBtn} ${open ? styles.open : ""}`} onClick={() => setOpen(!open)}>
         <span ref={valueElm}>{initValue?.name || options?.[0]?.name || ""}</span>
-        <span className={styles.toggleIcon}>
+        <div className={styles.toggleIcon} onClick={() => setOpen(!open)}>
           {open ? <FaChevronUp /> : <FaChevronDown />}
-        </span>
+        </div>
       </div>
       {
         open &&

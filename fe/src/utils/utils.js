@@ -1,7 +1,9 @@
 export const getYesterday = () => {
     const today = new Date();
-    const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
-    return yesterday.toLocaleDateString('en-CA')
+    const dayOfWeek = today.getDay(); 
+    const daysToSubtract = dayOfWeek === 1 ? 2 : 1; 
+    const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToSubtract);
+    return yesterday.toLocaleDateString('en-CA');
 }
 
 export const getRowSpan = (array, keyRowSpan, keyQuantity) => {

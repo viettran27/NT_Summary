@@ -5,8 +5,7 @@ const Header = () => {
   return (
     <div className={styles.header}>
       <div className={styles.maxWidth}>
-        <img src={logo} className={styles.logo}/>
-        <h1>Báo cáo sản lượng</h1>
+        <h1>NAM THUẬN</h1>
       </div>
     </div>
   )
