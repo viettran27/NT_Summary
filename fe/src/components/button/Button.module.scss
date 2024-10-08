@@ -7,10 +7,10 @@
     cursor: pointer;
 
     &.primary {
-        background-color: #00419E;
+        background-color: var(--primary-color);
     }
 
     &.success {
-        background-color: green;
+        background-color: #05ad2a;
     }
 }
