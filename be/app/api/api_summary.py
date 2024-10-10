@@ -40,8 +40,12 @@ def get_data(date: date, fac: str, db: Session = Depends(get_db2)):
                     END AS EFF_P
                 FROM HR 
                 JOIN (
-                    SELECT WorkDate, Line, LEFT(ETS_5.Style_A, Len(ETS_5.Style_A) - 1) as Style, SUM(Total_Qty) as Qty_TT, PN_SAM, SUM(SAH_A) as SAH_A FROM ETS_5
-                    GROUP BY WorkDate, Line, LEFT(ETS_5.Style_A, Len(ETS_5.Style_A) - 1), PN_SAM
+                    SELECT WorkDate, 
+                    Line, 
+                    LEFT(ETS.Style_A, Len(ETS.Style_A) - 1) as Style, 
+                    (SELECT SUM(Total_Qty) FROM ETS_5 WHERE Line = ETS.Line AND WorkDate = ETS.WorkDate GROUP BY Line) as Qty_TT, PN_SAM, 
+                    (SELECT SUM(SAH_A) FROM ETS_5 WHERE Line = ETS.Line AND WorkDate = ETS.WorkDate GROUP BY Line) as SAH_A FROM ETS_5 ETS 
+                    GROUP BY WorkDate, Line, LEFT(ETS.Style_A, Len(ETS.Style_A) - 1), PN_SAM
                 ) AS ETS ON HR.WorkDate = ETS.WorkDate AND HR.Line = ETS.Line
                 JOIN PPC ON HR.WorkDate = PPC.WorkDate AND HR.Line = PPC.Line
                 WHERE HR.WorkDate = '{date}'
@@ -51,13 +55,20 @@ def get_data(date: date, fac: str, db: Session = Depends(get_db2)):
         data = [dict(row._mapping) for row in result]
 
         new_data = {"Line":{}, "Unit": {}, "Fac": {}}
+        last_line_unit = None
+        last_line_fac = None
         for item in data:
             # Line
             if item["Unit"] not in new_data["Line"] and item["Fty"] == fac:
-                new_data["Line"][item["Unit"]] = []
+                new_data["Line"][item["Unit"]] = {}
             
             if item["Fty"] == fac:
-                new_data["Line"][item["Unit"]].append(item)
+                if item["Line"] not in new_data["Line"][item["Unit"]]:
+                    new_data["Line"][item["Unit"]][item["Line"]] = item
+                    new_data["Line"][item["Unit"]][item["Line"]]["Style"] = item["Style"]
+                else:
+                    lineData = new_data["Line"][item["Unit"]][item["Line"]]
+                    lineData["Style"] = lineData["Style"] + [item["Style"]] if isinstance(lineData["Style"], list) else [lineData["Style"], item["Style"]]
             
             # Unit
             if item["Unit"] not in new_data["Unit"] and item["Fty"] == fac:
@@ -75,7 +86,8 @@ def get_data(date: date, fac: str, db: Session = Depends(get_db2)):
                     "EFF_P": 0
                 }
 
-            if item["Fty"] == fac:
+            if item["Fty"] == fac and item["Line"] != last_line_unit:
+                last_line_unit = item["Line"]
                 unit_item = new_data["Unit"][item["Unit"]]
                 unit_item["Worker_TT"] += item["Worker_TT"]
                 unit_item["Total_hours"] += item["Total_hours_TT"]
@@ -107,18 +119,20 @@ def get_data(date: date, fac: str, db: Session = Depends(get_db2)):
                     "EFF_P": 0
                 }
             
-            fac_item = new_data["Fac"][item["Fty"]]
-            fac_item["Worker_TT"] += item["Worker_TT"]
-            fac_item["Total_hours"] += item["Total_hours_TT"]
-            fac_item["Total_hours_P"] += item["Worker_P"] * item["Hours_P"]
-            fac_item["Hours_Theory"] += item["Worker_TT"] * item["Hours_TT"]
-            fac_item["Qty_TT"] += item["Qty_TT"]
-            fac_item["Qty_P"] += item["Qty_P"]
-            fac_item["SAH_TT"] += item["SAH_TT"]
-            fac_item["SAH_P"] += item["SAH_P"]
-            fac_item["Worker_work_rate"] = round(fac_item["Total_hours"] / fac_item["Hours_Theory"] * 100, 2)
-            fac_item["EFF_TT"] = round(fac_item["SAH_TT"] / fac_item["Total_hours"] * 100, 2)
-            fac_item["EFF_P"] = round((fac_item["SAH_P"] / (fac_item["Total_hours_P"] * Decimal(0.9 if item["Fty"] == "NT1" else 0.93))) * 100, 2)
+            if item["Line"] != last_line_fac:
+                last_line_fac = item["Line"]
+                fac_item = new_data["Fac"][item["Fty"]]
+                fac_item["Worker_TT"] += item["Worker_TT"]
+                fac_item["Total_hours"] += item["Total_hours_TT"]
+                fac_item["Total_hours_P"] += item["Worker_P"] * item["Hours_P"]
+                fac_item["Hours_Theory"] += item["Worker_TT"] * item["Hours_TT"]
+                fac_item["Qty_TT"] += item["Qty_TT"]
+                fac_item["Qty_P"] += item["Qty_P"]
+                fac_item["SAH_TT"] += item["SAH_TT"]
+                fac_item["SAH_P"] += item["SAH_P"]
+                fac_item["Worker_work_rate"] = round(fac_item["Total_hours"] / fac_item["Hours_Theory"] * 100, 2)
+                fac_item["EFF_TT"] = round(fac_item["SAH_TT"] / fac_item["Total_hours"] * 100, 2)
+                fac_item["EFF_P"] = round((fac_item["SAH_P"] / (fac_item["Total_hours_P"] * Decimal(0.9 if item["Fty"] == "NT1" else 0.93))) * 100, 2)
 
         return new_data
     except Exception as e:

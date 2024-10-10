@@ -5,6 +5,7 @@ import Dropdown from 'src/components/dropdown/Dropdown'
 import { useEffect } from 'react'
 import axiosConfig from 'src/api/axios'
 import { getYesterday } from 'src/utils/utils'
+import { Fragment } from 'react'
 
 const Summary = () => {
 
@@ -73,27 +74,52 @@ const Summary = () => {
                                 </thead>
                                 <tbody>
                                     {
-                                        lineData.length === 0 ? 
+                                        Object.keys(lineData).length === 0 ? 
                                         <tr><td colSpan={13}>Chưa có dữ liệu</td></tr> : null
                                     }
                                     {
-                                        lineData.map((d, index) => {
-                                            return <tr key={index}>
-                                                <td>{d?.Line}</td>
-                                                <td>{d?.Worker_TT}</td>
-                                                <td>{d?.Worker_work_rate}%</td>
-                                                <td>{d?.Style}</td>
-                                                <td>{d?.SAM}</td>
-                                                <td>{d?.Total_hours_TT}</td>
-                                                <td>{d?.Qty_P}</td>
-                                                <td>{d?.Qty_TT}</td>
-                                                <td style={{color: d?.Qty_TT - d?.Qty_P > 0 ? "green" : "red"}}>{formatNumber(d?.Qty_TT - d?.Qty_P)}</td>
-                                                <td>{d?.SAH_P}</td>
-                                                <td>{d?.SAH_TT}</td>
-                                                <td style={{color: d?.SAH_TT - d?.SAH_P > 0 ? "green" : "red"}}>{formatNumber(d?.SAH_TT - d?.SAH_P)}</td>
-                                                <td>{d?.EFF_P}%</td>
-                                                <td style={{color: d?.EFF_TT >= d?.EFF_P ? "green" : "red"}}>{d?.EFF_TT}%</td>
-                                            </tr>
+                                        Object.keys(lineData).map((d, index) => {
+                                            const lineData_d = lineData?.[d]
+                                            const rowSpan = Array.isArray(lineData?.[d]?.["Style"]) ? lineData?.[d]?.["Style"].length : 1
+                                            if (rowSpan > 1)
+                                                return <Fragment>
+                                                    <tr key={index}>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.Line}</td>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.Worker_TT}</td>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.Worker_work_rate}%</td>
+                                                        <td>{lineData_d?.Style[0]}</td>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.SAM}</td>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.Total_hours_TT}</td>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.Qty_P}</td>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.Qty_TT}</td>
+                                                        <td rowSpan={rowSpan} style={{color: lineData_d?.Qty_TT - lineData_d?.Qty_P > 0 ? "green" : "red"}}>{formatNumber(lineData_d?.Qty_TT - lineData_d?.Qty_P)}</td>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.SAH_P}</td>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.SAH_TT}</td>
+                                                        <td rowSpan={rowSpan} style={{color: lineData_d?.SAH_TT - lineData_d?.SAH_P > 0 ? "green" : "red"}}>{formatNumber(lineData_d?.SAH_TT - lineData_d?.SAH_P)}</td>
+                                                        <td rowSpan={rowSpan}>{lineData_d?.EFF_P}%</td>
+                                                        <td rowSpan={rowSpan} style={{color: lineData_d?.EFF_TT >= lineData_d?.EFF_P ? "green" : "red"}}>{lineData_d?.EFF_TT}%</td>
+                                                    </tr>
+                                                    {
+                                                        lineData_d?.["Style"].map((style, index) => index === 0 ? null : <tr key={index}><td>{style}</td></tr>)
+                                                    }
+                                                </Fragment>  
+                                            else 
+                                                return <tr key={index}>
+                                                    <td>{lineData_d?.Line}</td>
+                                                    <td>{lineData_d?.Worker_TT}</td>
+                                                    <td>{lineData_d?.Worker_work_rate}%</td>
+                                                    <td>{lineData_d?.Style}</td>
+                                                    <td>{lineData_d?.SAM}</td>
+                                                    <td>{lineData_d?.Total_hours_TT}</td>
+                                                    <td>{lineData_d?.Qty_P}</td>
+                                                    <td>{lineData_d?.Qty_TT}</td>
+                                                    <td style={{color: lineData_d?.Qty_TT - lineData_d?.Qty_P > 0 ? "green" : "red"}}>{formatNumber(lineData_d?.Qty_TT - lineData_d?.Qty_P)}</td>
+                                                    <td>{lineData_d?.SAH_P}</td>
+                                                    <td>{lineData_d?.SAH_TT}</td>
+                                                    <td style={{color: lineData_d?.SAH_TT - lineData_d?.SAH_P > 0 ? "green" : "red"}}>{formatNumber(lineData_d?.SAH_TT - lineData_d?.SAH_P)}</td>
+                                                    <td>{lineData_d?.EFF_P}%</td>
+                                                    <td style={{color: lineData_d?.EFF_TT >= lineData_d?.EFF_P ? "green" : "red"}}>{lineData_d?.EFF_TT}%</td>
+                                                </tr>
                                         })
                                     }
                                 </tbody>
