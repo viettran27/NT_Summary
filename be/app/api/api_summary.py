@@ -22,7 +22,7 @@ def get_data(date: date, fac: str, db: Session = Depends(get_db2)):
                     HR.Total_hours_A as Total_hours_TT,
                     ETS.Style,
                     ETS.Qty_TT,
-                    ETS.PN_SAM as SAM,
+                    ETS.SAM,
                     CAST(ROUND(ETS.SAH_A, 2) AS decimal(10,2)) as SAH_TT,
                     PPC.SAH_P,
                     PPC.Qty_P,
@@ -43,9 +43,9 @@ def get_data(date: date, fac: str, db: Session = Depends(get_db2)):
                     SELECT WorkDate, 
                     Line, 
                     LEFT(ETS.Style_A, Len(ETS.Style_A) - 1) as Style, 
-                    (SELECT SUM(Total_Qty) FROM ETS_5 WHERE Line = ETS.Line AND WorkDate = ETS.WorkDate GROUP BY Line) as Qty_TT, PN_SAM, 
+                    (SELECT SUM(Total_Qty) FROM ETS_5 WHERE Line = ETS.Line AND WorkDate = ETS.WorkDate GROUP BY Line) as Qty_TT, SAM, 
                     (SELECT SUM(SAH_A) FROM ETS_5 WHERE Line = ETS.Line AND WorkDate = ETS.WorkDate GROUP BY Line) as SAH_A FROM ETS_5 ETS 
-                    GROUP BY WorkDate, Line, LEFT(ETS.Style_A, Len(ETS.Style_A) - 1), PN_SAM
+                    GROUP BY WorkDate, Line, LEFT(ETS.Style_A, Len(ETS.Style_A) - 1), SAM
                 ) AS ETS ON HR.WorkDate = ETS.WorkDate AND HR.Line = ETS.Line
                 JOIN PPC ON HR.WorkDate = PPC.WorkDate AND HR.Line = PPC.Line
                 WHERE HR.WorkDate = '{date}'
