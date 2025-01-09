@@ -1,4 +1,3 @@
-import React from 'react'
 import styles from "./Sidebar.module.scss"
 import logo from 'assets/logo_white.png'
 import { Link } from 'react-router-dom'

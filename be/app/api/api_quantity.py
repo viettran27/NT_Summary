@@ -74,6 +74,22 @@ def query_pack(date: date, fac: str, db: Session = Depends(get_db)):
     except:
         HTTPException(status_code=500, detail="Internal server error")
     
+def query_qc_101(date: date, fac: str, db: Session = Depends(get_db)):
+    try:
+        query = f"""
+        select (LTRIM(RTRIM(workline))) AS workline,Style_No,SUM(JG_Count) as Qty
+        from ETSDB_NAM.dbo.t_jjb
+        where CAST(EndDate AS DATE) = '{date}' and left(workline,1) = '{fac}'
+        and Gx_No = 101 and code not in ('88888','99999')
+        group by CAST(EndDate AS DATE),(LTRIM(RTRIM(workline))),Style_No
+        order by workline;
+        """
+
+        result = db.execute(text(query)).fetchall()
+        data = [dict(row._mapping) for row in result]
+        return data
+    except:
+        HTTPException(status_code=500, detail="Internal server error")
 
 def query_data(date: date, fac: str, db: Session = Depends(get_db)):
     try:
@@ -81,11 +97,13 @@ def query_data(date: date, fac: str, db: Session = Depends(get_db)):
         data_iron = query_iron(date, fac, db)
         data_qc = query_qc(date, fac, db)
         data_pack = query_pack(date, fac, db)
+        data_qc101 = query_qc_101(date, fac, db)
         return {
             "sew": data_sew,
             "iron": data_iron,
             "qc": data_qc,
-            "pack": data_pack
+            "pack": data_pack,
+            "data_qc101": data_qc101
         }
     except:
         HTTPException(status_code=500, detail="Internal server error")
@@ -93,15 +111,15 @@ def query_data(date: date, fac: str, db: Session = Depends(get_db)):
 @router.get("/")
 def get_data(date: date, fac: str, db: Session = Depends(get_db)): 
     try:
-        sew, iron, qc, pack = query_data(date, fac, db).values()
-        return {"sew": sew, "iron": iron, "qc": qc, "pack": pack}
+        sew, iron, qc, pack, data_qc101 = query_data(date, fac, db).values()
+        return {"sew": sew, "iron": iron, "qc": qc, "pack": pack, "data_qc101": data_qc101}
     except:
         HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/excel")
 def export_excel(date: date, fac: str, db: Session = Depends(get_db)):
     try:
-        sew, iron, qc, pack = query_data(date, fac, db).values()
+        sew, iron, qc, pack, data_qc101 = query_data(date, fac, db).values()
 
         quantity_totals = defaultdict(int)
         sum_quantity = 0
@@ -161,6 +179,24 @@ def export_excel(date: date, fac: str, db: Session = Depends(get_db)):
             ws.cell(row=current_row, column=5, value=item.get("quantity", 0))
             ws.merge_cells(start_row=current_row, start_column=2, end_row=current_row, end_column=3)
             current_row += 1
+        
+        current_merge_start = current_row
+        for i, item in enumerate(data_qc101):
+            if item["workline"] != data_qc101[i - 1]["workline"]: index += 1
+            ws.cell(row=current_row, column=1, value=index)
+            ws.cell(row=current_row, column=2, value=item['workline'])
+            ws.cell(row=current_row, column=3, value=item['Style_No'])
+            ws.cell(row=current_row, column=4, value=item['Qty'])
+            ws.cell(row=current_row, column=5, value=quantity_totals[item['workline']])
+            current_row += 1
+
+        for i in range(current_merge_start + 1, len(sew) + 5 + len(data_qc101) + 3): 
+            if i == len(sew) + 5 + len(data_qc101) + 2 or ws.cell(i, 2).value != ws.cell(i - 1, 2).value:
+                if current_merge_start < i - 1:
+                    ws.merge_cells(start_row=current_merge_start, start_column=1, end_row=i - 1, end_column=1)
+                    ws.merge_cells(start_row=current_merge_start, start_column=2, end_row=i - 1, end_column=2)
+                    ws.merge_cells(start_row=current_merge_start, start_column=5, end_row=i - 1, end_column=5)
+                current_merge_start = i
 
         # Style
         # Define border style
@@ -172,7 +208,7 @@ def export_excel(date: date, fac: str, db: Session = Depends(get_db)):
             cell.font = bold_font
             cell.alignment = Alignment(horizontal='center', vertical='center')
         
-        for row in ws.iter_rows(min_row=1, max_row=len(sew) + 5, max_col=5):
+        for row in ws.iter_rows(min_row=1, max_row=len(sew) + 5 + len(data_qc101), max_col=5):
             for cell in row:
                 cell.border = thin_border
                 cell.alignment = Alignment(horizontal='center', vertical='center')
@@ -204,7 +240,7 @@ def export_excel(date: date, fac: str, db: Session = Depends(get_db)):
 @router.get("/excel_secretary")
 def export_excel_for_secretary(date: date, fac: str, db: Session = Depends(get_db)):
     try:
-        sew, iron, qc, pack = query_data(date, fac, db).values()
+        sew, iron, qc, pack, data_qc101 = query_data(date, fac, db).values()
 
         quantity_totals = defaultdict(int)
         sum_quantity = 0
